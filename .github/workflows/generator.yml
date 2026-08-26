@@ -1,0 +1,38 @@
+name: Automatic Story Generator
+
+on:
+  workflow_dispatch: # Bisa dijalankan manual kapan saja via tombol GitHub Actions
+  schedule:
+    - cron: "0 0,12 * * *" # Jalankan 2x sehari (Jam 07.00 WIB & 19.00 WIB)
+
+jobs:
+  generate-story:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Story Engine
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python bbmengine.py
+
+      - name: Auto Commit and Push New Story
+        run: |
+          git config --global user.name "Dongeng Bot"
+          git config --global user.email "bot@bbmstory.local"
+          git add stories/ state.json
+          git commit -m "Auto-generate dongeng baru (.docx) & update state" || exit 0
+          git push
